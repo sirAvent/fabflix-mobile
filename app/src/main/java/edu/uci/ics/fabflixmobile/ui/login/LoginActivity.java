@@ -14,8 +14,11 @@ import com.android.volley.toolbox.StringRequest;
 import edu.uci.ics.fabflixmobile.data.NetworkManager;
 import edu.uci.ics.fabflixmobile.databinding.ActivityLoginBinding;
 import edu.uci.ics.fabflixmobile.ui.movielist.MovieListActivity;
+import edu.uci.ics.fabflixmobile.ui.movielist.Search;
 import java.util.HashMap;
 import java.util.Map;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -27,9 +30,9 @@ public class LoginActivity extends AppCompatActivity {
       In Android, localhost is the address of the device or the emulator.
       To connect to your machine, you need to use the below IP address
      */
-    private final String host = "10.0.2.2";
+    private final String host = "47.154.93.201";
     private final String port = "8080";
-    private final String domain = "cs122b_project2_login_cart_example_war";
+    private final String domain = "2023_fall_cs122b_sus_war";
     private final String baseURL = "http://" + host + ":" + port + "/" + domain;
 
     @Override
@@ -61,13 +64,23 @@ public class LoginActivity extends AppCompatActivity {
                 response -> {
                     // TODO: should parse the json response to redirect to appropriate functions
                     //  upon different response value.
-                    Log.d("login.success", response);
-                    //Complete and destroy login activity once successful
-                    finish();
-                    // initialize the activity(page)/destination
-                    Intent MovieListPage = new Intent(LoginActivity.this, MovieListActivity.class);
-                    // activate the list page.
-                    startActivity(MovieListPage);
+                    try {
+                        JSONObject results = new JSONObject(response);
+                        if(results.getString("status").equals("success")) {
+                            Log.d("login.success", response);
+                            //Complete and destroy login activity once successful
+                            finish();
+                            // initialize the activity(page)/destination
+                            Intent SearchPage = new Intent(LoginActivity.this, Search.class);
+                            // activate the list page.
+                            startActivity(SearchPage);
+                        }
+                        else {
+                            message.setText(results.getString("message"));
+                        }
+                    } catch (JSONException e) {
+                        throw new RuntimeException(e);
+                    }
                 },
                 error -> {
                     // error
@@ -79,6 +92,7 @@ public class LoginActivity extends AppCompatActivity {
                 final Map<String, String> params = new HashMap<>();
                 params.put("username", username.getText().toString());
                 params.put("password", password.getText().toString());
+                params.put("platform", "mobile");
                 return params;
             }
         };
