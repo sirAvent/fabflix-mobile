@@ -30,7 +30,7 @@ public class LoginActivity extends AppCompatActivity {
       In Android, localhost is the address of the device or the emulator.
       To connect to your machine, you need to use the below IP address
      */
-    private final String host = "47.154.93.201";
+    private final String host = "192.168.254.137";
     private final String port = "8080";
     private final String domain = "2023_fall_cs122b_sus_war";
     private final String baseURL = "http://" + host + ":" + port + "/" + domain;
@@ -54,7 +54,7 @@ public class LoginActivity extends AppCompatActivity {
 
     @SuppressLint("SetTextI18n")
     public void login() {
-        message.setText("Trying to login");
+        message.setText("Trying to login2");
         // use the same network queue across our application
         final RequestQueue queue = NetworkManager.sharedManager(this).queue;
         // request type is POST
@@ -84,6 +84,7 @@ public class LoginActivity extends AppCompatActivity {
                 },
                 error -> {
                     // error
+                    message.setText("Trying to error" + error.toString());
                     Log.d("login.error", error.toString());
                 }) {
             @Override

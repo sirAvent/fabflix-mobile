@@ -35,11 +35,11 @@ public class MovieListActivity extends AppCompatActivity {
     Button prevButton;
     String query;
 
-    private final String host = "47.154.93.201";
+    private final String host = "192.168.254.137";
     private final String port = "8080";
     private final String domain = "2023_fall_cs122b_sus_war";
     private final String serverEndpoint = "/api/Search?";
-    private final String baseURL = "https://" + host + ":" + port + "/" + domain + serverEndpoint;
+    private final String baseURL = "http://" + host + ":" + port + "/" + domain + serverEndpoint;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,7 +50,7 @@ public class MovieListActivity extends AppCompatActivity {
         // TODO: this should be retrieved from the backend server
         Bundle extras = getIntent().getExtras();
         offset = extras.getInt("offset");
-        int pageNum = offset/10 + 1;
+        int pageNum = offset + 1;
         query = extras.getString("query");
         pageView.setText("Page " + Integer.toString(pageNum));
         String jsonStr = extras.getString("movies");
@@ -87,12 +87,12 @@ public class MovieListActivity extends AppCompatActivity {
     }
     @SuppressLint("SetTextI18n")
     public void prev() {
-        if(offset - 10 >= 0) {
+        if(offset >= 0) {
             // use the same network queue across our application
             final RequestQueue queue = NetworkManager.sharedManager(this).queue;
-            String parameters = "query=" + query + "&sortBy=title+ASC+rating+ASC&numRecords=10&firstRecord=" + Integer.toString(offset - 10);
+            String parameters = "title=" + query + "&limit=10&page=" + offset;
 
-            // request type is POST
+            // request type is GET
             final StringRequest movieRequest = new StringRequest(
                     Request.Method.GET,
                     baseURL + parameters,
@@ -100,28 +100,16 @@ public class MovieListActivity extends AppCompatActivity {
                         try {
                             JSONArray jsonArr = new JSONArray(response);
                             final ArrayList<Movie> movies = new ArrayList<>();
-                            int maxRecords = jsonArr.getJSONObject(0).getInt("max_records");
                             for ( int i = 0; i < jsonArr.length(); ++i ) {
                                 JSONObject jsonObj = jsonArr.getJSONObject(i);
-                                String rating = "";
-                                if(jsonObj.getString("movie_rating").equals("null")) {
-                                    rating = "0.0";
-                                }
-                                else if(jsonObj.getString("movie_rating") == null) {
-                                    rating = "0.0";
-                                }
-                                else {
-                                    rating = jsonObj.getString("movie_rating");
-                                }
-                                movies.add(new Movie(jsonObj.getString("movie_title"), jsonObj.getString("movie_id"), jsonObj.getString("movie_year"),
-                                        jsonObj.getString("movie_director"), jsonObj.getString("movie_genres"), jsonObj.getString("movie_stars"), rating));
+                                movies.add(new Movie(jsonObj.getString("title"), jsonObj.getString("movieId"), jsonObj.getString("year"),
+                                        jsonObj.getString("director"), jsonObj.getString("genres"), jsonObj.getString("star_names"), jsonObj.getString("rating")));
                             }
                             Gson gson = new Gson();
                             String moviesJsonStr = gson.toJson(movies);
                             Intent MovieListPage = new Intent(MovieListActivity.this, MovieListActivity.class);
                             MovieListPage.putExtra("movies", moviesJsonStr);
-                            MovieListPage.putExtra("offset", offset-10);
-                            MovieListPage.putExtra("maxRecords", maxRecords);
+                            MovieListPage.putExtra("offset", offset);
                             MovieListPage.putExtra("query", query);
                             startActivity(MovieListPage);
 

@@ -25,9 +25,9 @@ public class SingleMovieActivity extends AppCompatActivity {
 
     String movieId;
 
-    private final String host = "47.154.93.201";
+    private final String host = "192.168.254.137";
     private final String port = "8080";
-    private final String domain = "cs122b-project4";
+    private final String domain = "2023_fall_cs122b_sus_war";
     private final String serverEndpoint = "/api/single-movie";
     private final String baseURL = "http://" + host + ":" + port + "/" + domain + serverEndpoint;
 
@@ -55,33 +55,12 @@ public class SingleMovieActivity extends AppCompatActivity {
                     try {
                         JSONArray jsonArray = new JSONArray(response);
                         JSONObject jsonObj = jsonArray.getJSONObject(0);
-                        titleView.setText(jsonObj.getString("movie_title") + " (" + jsonObj.getString("movie_year") + ")");
-                        if(jsonObj.getString("movie_rating").equals("null")) {
-                            ratingView.setText("Rating: 0.0 \u2605");
-                        }
-                        else if(jsonObj.getString("movie_rating") == null) {
-                            ratingView.setText("Rating: 0.0 \u2605");
-                        }
-                        else {
-                            ratingView.setText("Rating: " + jsonObj.getString("movie_rating") + " \u2605");
-                        }
-                        directorView.setText("Director: " + jsonObj.getString("movie_director"));
-                        String[] parsed = jsonObj.getString("movie_genres").split(", ");
-                        String genres = "";
-                        for( String p : parsed) {
-                            String[] parsed2 = p.split("\\|");
-                            genres += parsed2[1] + ", ";
-                        }
-                        genres = genres.substring(0, genres.length()-2);
-                        parsed = jsonObj.getString("movie_stars").split(", ");
-                        String stars = "";
-                        for( String p : parsed) {
-                            String[] parsed2 = p.split("\\|");
-                            stars += parsed2[1] + ", ";
-                        }
-                        stars = stars.substring(0, stars.length()-2);
-                        genresView.setText("Genres: " + genres);
-                        starsView.setText("Stars: " + stars);
+                        titleView.setText(jsonObj.getString("title") + " (" + jsonObj.getString("year") + ")");
+                        ratingView.setText(jsonObj.getString("rating"));
+                        directorView.setText("Director: " + jsonObj.getString("director"));
+                        String[] parsed = jsonObj.getString("genres").split(", ");
+                        genresView.setText("Genres: " + (jsonObj.getString("genres")));
+                        starsView.setText("Stars: " + (jsonObj.getString("star_names")));
                     } catch (JSONException e) {
                         throw new RuntimeException(e);
                     }

@@ -33,11 +33,11 @@ public class Search extends AppCompatActivity{
       In Android, localhost is the address of the device or the emulator.
       To connect to your machine, you need to use the below IP address
      */
-    private final String host = "13.52.75.242";
-    private final String port = "8443";
-    private final String domain = "cs122b-project4";
-    private final String serverEndpoint = "/api/fulltext?";
-    private final String baseURL = "https://" + host + ":" + port + "/" + domain + serverEndpoint;
+    private final String host = "192.168.254.137";
+    private final String port = "8080";
+    private final String domain = "2023_fall_cs122b_sus_war";
+    private final String serverEndpoint = "/api/Search?";
+    private final String baseURL = "http://" + host + ":" + port + "/" + domain + serverEndpoint;
 
 
     @Override
@@ -53,7 +53,7 @@ public class Search extends AppCompatActivity{
     @SuppressLint("SetTextI18n")
     public void search(EditText query) {
         queryStr = String.valueOf(query.getText());
-        String parameters = "query=" + query.getText() + "&sortBy=title+ASC+rating+ASC&numRecords=10&firstRecord=0";
+        String parameters = "title=" + query.getText();
         // use the same network queue across our application
         final RequestQueue queue = NetworkManager.sharedManager(this).queue;
         final StringRequest searchRequest = new StringRequest(
@@ -63,24 +63,18 @@ public class Search extends AppCompatActivity{
                     try {
                         JSONArray jsonArr = new JSONArray(response);
                         final ArrayList<Movie> movies = new ArrayList<>();
-                        String maxRecords = "0";
-                        if(jsonArr.length() > 0) {
-                            maxRecords = jsonArr.getJSONObject(0).getString("max_records");
-                        }
-                        for ( int i = 0; i < jsonArr.length(); ++i ) {
+
+                        for (int i = 0; i < jsonArr.length(); ++i) {
                             JSONObject jsonObj = jsonArr.getJSONObject(i);
-                            String rating = "";
-                            if(jsonObj.getString("movie_rating") == null) {
-                                rating = "0.0";
-                            }
-                            else if(jsonObj.getString("movie_rating").equals("null")) {
-                                rating = "0.0";
-                            }
-                            else {
-                                rating = jsonObj.getString("movie_rating");
-                            }
-                            movies.add(new Movie(jsonObj.getString("movie_title"), jsonObj.getString("movie_id"), jsonObj.getString("movie_year"),
-                                    jsonObj.getString("movie_director"), jsonObj.getString("movie_genres"), jsonObj.getString("movie_stars"), rating));
+                            movies.add(new Movie(
+                                    jsonObj.getString("title"),
+                                    jsonObj.getString("movieId"),
+                                    jsonObj.optString("year", ""), // If "year" is not present, it will default to an empty string
+                                    jsonObj.optString("director", ""), // If "director" is not present, it will default to an empty string
+                                    jsonObj.optString("genres", ""), // If "genres" is not present, it will default to an empty string
+                                    jsonObj.optString("star_names", ""),
+                                    jsonObj.optString("rating", "")
+                            ));
                         }
                         Gson gson = new Gson();
                         String moviesJsonStr = gson.toJson(movies);
@@ -88,9 +82,7 @@ public class Search extends AppCompatActivity{
                         MovieListPage.putExtra("movies", moviesJsonStr);
                         MovieListPage.putExtra("offset", 0);
                         MovieListPage.putExtra("query", queryStr);
-                        if(movies.size() > 0) {
-                            MovieListPage.putExtra("maxRecords", Integer.parseInt(maxRecords));
-                        }
+
                         startActivity(MovieListPage);
 
                     } catch (JSONException e) {
