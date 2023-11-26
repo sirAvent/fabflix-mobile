@@ -80,7 +80,7 @@ public class Search extends AppCompatActivity{
                         String moviesJsonStr = gson.toJson(movies);
                         Intent MovieListPage = new Intent(Search.this, MovieListActivity.class);
                         MovieListPage.putExtra("movies", moviesJsonStr);
-                        MovieListPage.putExtra("offset", 0);
+                        MovieListPage.putExtra("pageNumber", 1);
                         MovieListPage.putExtra("query", queryStr);
 
                         startActivity(MovieListPage);

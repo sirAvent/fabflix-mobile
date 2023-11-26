@@ -29,8 +29,7 @@ public class MovieListActivity extends AppCompatActivity {
     TextView pageView;
     TextView noResultsView;
     TextView numResultsView;
-    int maxRecords;
-    int offset;
+    int pageNumber;
     Button nextButton;
     Button prevButton;
     String query;
@@ -46,24 +45,15 @@ public class MovieListActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_movielist);
         pageView = findViewById(R.id.page);
-        numResultsView = findViewById(R.id.numResults);
         // TODO: this should be retrieved from the backend server
         Bundle extras = getIntent().getExtras();
-        offset = extras.getInt("offset");
-        int pageNum = offset + 1;
+        pageNumber = extras.getInt("pageNumber");
         query = extras.getString("query");
-        pageView.setText("Page " + Integer.toString(pageNum));
+        pageView.setText("Page " + Integer.toString(pageNumber));
         String jsonStr = extras.getString("movies");
         Gson gson = new Gson();
         final ArrayList<Movie> movies = gson.fromJson(jsonStr, new TypeToken<ArrayList<Movie>>(){}.getType());
-        if(movies.size() > 0) {
-            maxRecords = extras.getInt("maxRecords");
-            if(maxRecords == 1) {
-                numResultsView.setText("Found " + maxRecords + " Result for '" + query + "'" );
-            }
-            else {
-                numResultsView.setText("Found " + maxRecords + " Results for '" + query + "'" );
-            }
+        if(!movies.isEmpty()) {
             MovieListViewAdapter adapter = new MovieListViewAdapter(this, movies);
             ListView listView = findViewById(R.id.list);
             listView.setAdapter(adapter);
@@ -76,7 +66,6 @@ public class MovieListActivity extends AppCompatActivity {
         }
         else {
             numResultsView.setVisibility(View.GONE);
-            maxRecords = 0;
             noResultsView = findViewById(R.id.noResults);
             noResultsView.setText("There are no results for the query '" + query + "'" );
         }
@@ -87,94 +76,80 @@ public class MovieListActivity extends AppCompatActivity {
     }
     @SuppressLint("SetTextI18n")
     public void prev() {
-        if(offset >= 0) {
-            // use the same network queue across our application
-            final RequestQueue queue = NetworkManager.sharedManager(this).queue;
-            String parameters = "title=" + query + "&limit=10&page=" + offset;
+        // use the same network queue across our application
+        final RequestQueue queue = NetworkManager.sharedManager(this).queue;
+        String parameters = "title=" + query + "&sorting=titleRatingAA&limit=10&page=" + Integer.toString(pageNumber-1);
 
-            // request type is GET
-            final StringRequest movieRequest = new StringRequest(
-                    Request.Method.GET,
-                    baseURL + parameters,
-                    response -> {
-                        try {
-                            JSONArray jsonArr = new JSONArray(response);
-                            final ArrayList<Movie> movies = new ArrayList<>();
-                            for ( int i = 0; i < jsonArr.length(); ++i ) {
-                                JSONObject jsonObj = jsonArr.getJSONObject(i);
-                                movies.add(new Movie(jsonObj.getString("title"), jsonObj.getString("movieId"), jsonObj.getString("year"),
-                                        jsonObj.getString("director"), jsonObj.getString("genres"), jsonObj.getString("star_names"), jsonObj.getString("rating")));
-                            }
-                            Gson gson = new Gson();
-                            String moviesJsonStr = gson.toJson(movies);
-                            Intent MovieListPage = new Intent(MovieListActivity.this, MovieListActivity.class);
-                            MovieListPage.putExtra("movies", moviesJsonStr);
-                            MovieListPage.putExtra("offset", offset);
-                            MovieListPage.putExtra("query", query);
-                            startActivity(MovieListPage);
-
-                        } catch (JSONException e) {
-                            throw new RuntimeException(e);
+        // request type is GET
+        final StringRequest movieRequest = new StringRequest(
+                Request.Method.GET,
+                baseURL + parameters,
+                response -> {
+                    try {
+                        JSONArray jsonArr = new JSONArray(response);
+                        final ArrayList<Movie> movies = new ArrayList<>();
+                        for ( int i = 0; i < jsonArr.length(); ++i ) {
+                            JSONObject jsonObj = jsonArr.getJSONObject(i);
+                            movies.add(new Movie(jsonObj.getString("title"), jsonObj.getString("movieId"), jsonObj.getString("year"),
+                                    jsonObj.getString("director"), jsonObj.getString("genres"), jsonObj.getString("star_names"), jsonObj.getString("rating")));
                         }
-                    },
-                    error -> {
-                        // error
-                        Log.d("movie.error", error.toString());
-                    }) {
-            };
-            queue.add(movieRequest);
-        }
+                        Gson gson = new Gson();
+                        String moviesJsonStr = gson.toJson(movies);
+                        Intent MovieListPage = new Intent(MovieListActivity.this, MovieListActivity.class);
+                        MovieListPage.putExtra("movies", moviesJsonStr);
+                        MovieListPage.putExtra("pageNumber", pageNumber-1);
+                        MovieListPage.putExtra("query", query);
+                        startActivity(MovieListPage);
+
+                    } catch (JSONException e) {
+                        throw new RuntimeException(e);
+                    }
+                },
+                error -> {
+                    // error
+                    Log.d("movie.error", error.toString());
+                }) {
+        };
+        queue.add(movieRequest);
 
     }
     public void next() {
-        if(offset + 10 < maxRecords) {
-            // use the same network queue across our application
-            final RequestQueue queue = NetworkManager.sharedManager(this).queue;
-            String parameters = "query=" + query + "&sortBy=title+ASC+rating+ASC&numRecords=10&firstRecord=" + Integer.toString(offset + 10);
+        // use the same network queue across our application
+        final RequestQueue queue = NetworkManager.sharedManager(this).queue;
+        String parameters = "title=" + query + "&sorting=titleRatingAA&limit=10&page=" + Integer.toString(pageNumber+1);
+        Log.d("param", parameters);
 
-            final StringRequest loginRequest = new StringRequest(
-                    Request.Method.GET,
-                    baseURL + parameters,
-                    response -> {
-                        try {
-                            JSONArray jsonArr = new JSONArray(response);
-                            final ArrayList<Movie> movies = new ArrayList<>();
-                            int maxRecords = jsonArr.getJSONObject(0).getInt("max_records");
-                            for ( int i = 0; i < jsonArr.length(); ++i ) {
-                                JSONObject jsonObj = jsonArr.getJSONObject(i);
-                                String rating = "";
-                                if(jsonObj.getString("movie_rating").equals("null")) {
-                                    rating = "0.0";
-                                }
-                                else if(jsonObj.getString("movie_rating") == null) {
-                                    rating = "0.0";
-                                }
-                                else {
-                                    rating = jsonObj.getString("movie_rating");
-                                }
-                                movies.add(new Movie(jsonObj.getString("movie_title"), jsonObj.getString("movie_id"), jsonObj.getString("movie_year"),
-                                        jsonObj.getString("movie_director"), jsonObj.getString("movie_genres"), jsonObj.getString("movie_stars"), rating));
-                            }
-                            Gson gson = new Gson();
-                            String moviesJsonStr = gson.toJson(movies);
-                            Intent MovieListPage = new Intent(MovieListActivity.this, MovieListActivity.class);
-                            MovieListPage.putExtra("movies", moviesJsonStr);
-                            MovieListPage.putExtra("offset", offset+10);
-                            MovieListPage.putExtra("maxRecords", maxRecords);
-                            MovieListPage.putExtra("query", query);
-                            startActivity(MovieListPage);
+        final StringRequest loginRequest = new StringRequest(
+                Request.Method.GET,
+                baseURL + parameters,
+                response -> {
+                    try {
+                        JSONArray jsonArr = new JSONArray(response);
 
-                        } catch (JSONException e) {
-                            throw new RuntimeException(e);
+                        final ArrayList<Movie> movies = new ArrayList<>();
+                        for ( int i = 0; i < jsonArr.length(); ++i ) {
+                            JSONObject jsonObj = jsonArr.getJSONObject(i);
+                            movies.add(new Movie(jsonObj.getString("title"), jsonObj.getString("movieId"), jsonObj.getString("year"),
+                                    jsonObj.getString("director"), jsonObj.getString("genres"), jsonObj.getString("star_names"), jsonObj.getString("rating")));
                         }
-                    },
-                    error -> {
-                        // error
-                        Log.d("login.error", error.toString());
-                    }) {
-            };
-            queue.add(loginRequest);
-        }
+                        Gson gson = new Gson();
+                        String moviesJsonStr = gson.toJson(movies);
+                        Intent MovieListPage = new Intent(MovieListActivity.this, MovieListActivity.class);
+                        MovieListPage.putExtra("movies", moviesJsonStr);
+                        MovieListPage.putExtra("pageNumber", pageNumber+1);
+                        MovieListPage.putExtra("query", query);
+                        startActivity(MovieListPage);
+                    } catch (JSONException e) {
+                        throw new RuntimeException(e);
+                    }
+                },
+                error -> {
+                    // error
+                    Log.d("login.error", error.toString());
+                }) {
+        };
+        queue.add(loginRequest);
+        // on login submit and next button click
         // important: queue.add is where the login request is actually sent
 
     }
